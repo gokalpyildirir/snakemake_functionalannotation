@@ -1,5 +1,5 @@
 .snakemake
-dag.svg
+# dag.svg
 Illumina_reads/WGA_10a_S2_R1_001.fastq.gz
 Illumina_reads/WGA_10a_S2_R2_001.fastq.gz
 funannotate/protein_evidence/WGA_10a_S2/
