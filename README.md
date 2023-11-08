@@ -1,6 +1,6 @@
-# AAFC Phylogenetic Tree Project Part 2
+# AAFC Phylogenetic Tree Project Part 1
 
-Welcome to the second phase of our AAFC Phylogenetic Tree Project! This Snakemake workflow is designed to help you assemble genomes, annotate genes, and assess BUSCO scores after quality filtering and contaminant removal from Illumina paired-end reads. Before you begin, please ensure you have Mambaforge installed by following the installation instructions provided here: [Snakemake Setup Guide](https://snakemake.readthedocs.io/en/stable/tutorial/setup.html)
+Welcome to the first phase of our AAFC Phylogenetic Tree Project! This Snakemake workflow is designed to help you assemble genomes, annotate genes, and assess BUSCO scores after quality filtering and contaminant removal from Illumina paired-end reads. Before you begin, please ensure you have Mambaforge installed by following the installation instructions provided here: [Snakemake Setup Guide](https://snakemake.readthedocs.io/en/stable/tutorial/setup.html)
 
 Once you've successfully installed Mambaforge, proceed to create a new conda environment using the provided ```environment.yaml``` file.
 
