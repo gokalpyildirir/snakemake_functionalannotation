@@ -1,0 +1,7 @@
+threads: 10
+
+species: 'Acaulospora delicata'
+
+iprscan_xml: funannotate/Acaulospora_delicata.proteins.fa.xml
+
+fungi_odb10_path: ../fungi_odb10
