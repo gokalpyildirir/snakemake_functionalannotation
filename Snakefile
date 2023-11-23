@@ -1,51 +1,44 @@
 configfile: "config.yaml"
 
+
+# Comment out the following rule for the second step of the workflow.
+# Uncomment the next rule.
+rule all:
+    input:
+        expand(
+            "funannotate/{sample}_annotation/predict_results",
+            sample=config["samples"],
+        ),
+        expand("busco_results/{sample}_geno", sample=config["samples"]),
+        expand("busco_results/{sample}_prot", sample=config["samples"]),
+
+
+# Comment out the following rule for the first step of the workflow:
+# rule all:
+#     input:
+#         expand(
+#             "funannotate/{sample}_annotation/annotate_results",
+#             sample=config["samples"],
+#         )
+
+
 rule fastp_trim_run:
     input:
-        read1="Illumina_reads/{sample}_R1_001.fastq.gz",
-        read2="Illumina_reads/{sample}_R2_001.fastq.gz",
+        "Illumina_reads/",
     output:
-        tread1="Illumina_reads/trimmed/{sample}_R1_001_trimmed.fastq.gz",
-        tread2="Illumina_reads/trimmed/{sample}_R2_001_trimmed.fastq.gz",
-    threads: 10
-    shell:
-        "fastp -i {input.read1} -o {output.tread1} -I {input.read2} -O {output.tread2} -q 30 "
-        "-w {threads} -j {wildcards.sample}.json -h {wildcards.sample}.html --detect_adapter_for_pe -V"
-
-
-rule bbnorm_run:
-    input:
-        tread1="Illumina_reads/trimmed/{sample}_R1_001_trimmed.fastq.gz",
-        tread2="Illumina_reads/trimmed/{sample}_R2_001_trimmed.fastq.gz",
-    output:
-        bread1="Illumina_reads/bbnormed_krakened/{sample}_R1_bbnormed.fastq.gz",
-        bread2="Illumina_reads/bbnormed_krakened/{sample}_R2_bbnormed.fastq.gz",
-    shell:
-        "bbnorm.sh in={input.tread1} in2={input.tread2} target=100 min=5 out={output.bread1} out2={output.bread2}"
-
-
-rule kraken2_run:
-    input:
-        bread1="Illumina_reads/bbnormed_krakened/{sample}_R1_bbnormed.fastq.gz",
-        bread2="Illumina_reads/bbnormed_krakened/{sample}_R2_bbnormed.fastq.gz",
-    output:
-        kread1="Illumina_reads/bbnormed_krakened/{sample}_R1_krakened.fastq.gz",
-        kread2="Illumina_reads/bbnormed_krakened/{sample}_R2_krakened.fastq.gz",
-    threads: 10
-    shell:
-        "kraken2 -db kraken2_standard_db --threads {threads} --unclassified-out Illumina_reads/bbnormed_krakened/{wildcards.sample}#_krakened.fastq.gz "
-        "--gzip-compressed --paired {input.bread1} {input.bread2} --report {wildcards.sample}_report.txt"
+        "spades_run.yaml",
+    script:
+        "scripts/fastp_trim.sh"
 
 
 rule spades_run:
     input:
-        kread1="Illumina_reads/bbnormed_krakened/{sample}_R1_krakened.fastq.gz",
-        kread2="Illumina_reads/bbnormed_krakened/{sample}_R2_krakened.fastq.gz",
+        "spades_run.yaml",
     output:
         dirspades="spades_assemblies/{sample}_assembly",
         scafspades="spades_assemblies/{sample}_assembly/scaffolds.fasta",
     shell:
-        "spades.py -1 {input.kread1} -2 {input.kread2} -o {output.dirspades}"
+        "spades.py --dataset {input} -o {output.dirspades}"
 
 
 rule sizefilter_run:
@@ -63,9 +56,11 @@ rule busco_run:
     output:
         dirbusco="busco_results/{sample}_geno",
         result="busco_results/{sample}_geno/short_summary.specific.fungi_odb10.{sample}.txt",
-    threads: 10
+    params:
+        buscodb=config["busco_odb_path"],
+    threads: config["threads"]
     shell:
-        "busco -i {input} -o {output.dirbusco} -l ./fungi_odb10 -c 10 -m geno"
+        "busco -i {input} -o {output.dirbusco} -l {params.buscodb} -c 10 -m geno"
 
 
 rule funannotate_sort_run:
@@ -79,33 +74,37 @@ rule funannotate_sort_run:
 
 rule funannotate_run:
     input:
-        scaf="funannotate/{sample}_sorted.scaffolds.fasta",
-        rna="funannotate/transcript_evidence/{sample}/trinity_out_dir.Trinity.fasta",
-        prot="funannotate/protein_evidence/{sample}/sequence.fasta",
+        "funannotate/{sample}_sorted.scaffolds.fasta",
     output:
         dir_predict="funannotate/{sample}_annotation/predict_results",
-        protout="funannotate/{sample}_annotation/predict_results/Acaulospora_delicata.proteins.fa",  # I WILL CHANGE THIS IN THE CONFIG FILE
     params:
         dir="funannotate/{sample}_annotation",
-    threads: 10
+        species=config["species"],
+        rna=config["trinity_ev"],
+        prot=config["protein_ev"],
+        buscoid=config["busco_odb_id"],
+    threads: config["threads"]
     shell:
-        "funannotate predict -i {input.scaf} "
-        "--species 'Acaulospora delicata'"
-        "--transcript_evidence {input.rna} "
-        "--protein_evidence {input.prot} $FUNANNOTATE_DB/uniprot_sprot.fasta "
-        "-o {params.dir} --cpus {threads}"
-        # I WILL CHANGE THIS IN THE CONFIG FILE
+        "funannotate predict -i {input} "
+        "--species '{params.species}' "
+        "--transcript_evidence {params.rna} "
+        "--protein_evidence {params.prot} $FUNANNOTATE_DB/uniprot_sprot.fasta "
+        "-o {params.dir} --cpus {threads} "
+        "--busco_db {params.buscoid}"
 
 
 rule buscoprot_run:
     input:
-        "funannotate/{sample}_annotation/predict_results/Acaulospora_delicata.proteins.fa",  # I WILL CHANGE THIS IN THE CONFIG FILE
+        "funannotate/{sample}_annotation/predict_results/",
     output:
         dirbusco="busco_results/{sample}_prot",
         result="busco_results/{sample}_prot/short_summary.specific.fungi_odb10.{sample}.txt",
-    threads: 10
+    threads: config["threads"]
+    params:
+        uspecies=config["underlined_species"],
+        buscodb=config["busco_odb_path"],
     shell:
-        "busco -i {input} -o {output.dirbusco} -l ./fungi_odb10 -c {threads} -m protein"  # I will CHANGE THE ODB DIRECTION IN THE CONFIG FILE
+        "busco -i {input}/{params.uspecies}.proteins.fa -o {output.dirbusco} -l {params.buscodb} -c {threads} -m protein"
 
 
 rule funcpredict_run:
@@ -114,11 +113,11 @@ rule funcpredict_run:
     output:
         "funannotate/{sample}_annotation/annotate_results",
     params:
-
-    threads: 10
+        iprscan=config["iprscan_xml"],
+        buscoid=config["busco_odb_id"],
+    threads: config["threads"]
     shell:
         "funannotate annotate -i {input} "
         "--species 'Acaulospora delicata' "
-        "--iprscan /ssd1/interproscan/output/Acaulospora_delicata.proteins.fa.xml "
-        "--cpus {threads} --busco_db fungi_odb10 --force"
-        # I will change this
+        "--iprscan {params.iprscan} "
+        "--cpus {threads} --busco_db {params.buscoid} --force"

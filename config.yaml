@@ -1,7 +1,21 @@
-threads: 10
+# Specify the sample ID here:
+samples: 
+  WGA_10a_S2
 
-species: 'Acaulospora delicata'
+# Specify the number of threads:
+threads: 16
 
+# Identify the species and underline for file names
+species: Acaulospora delicata
+underlined_species: Acaulospora_delicata
+
+# Interproscan xml output path:
 iprscan_xml: funannotate/Acaulospora_delicata.proteins.fa.xml
 
-fungi_odb10_path: ../fungi_odb10
+# Busco ODB directory path
+busco_odb_id: fungi_odb10
+busco_odb_path: ../fungi_odb10
+
+# Path to transcript and protein evidence
+trinity_ev: funannotate/transcript_evidence/WGA_10a_S2/trinity_out_dir.Trinity.fasta
+protein_ev: funannotate/protein_evidence/WGA_10a_S2/sequence.fasta

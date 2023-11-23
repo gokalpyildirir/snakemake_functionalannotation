@@ -1,6 +1,6 @@
 .snakemake
 # dag.svg
-Illumina_reads/WGA_10a_S2_R1_001.fastq.gz
-Illumina_reads/WGA_10a_S2_R2_001.fastq.gz
+Illumina_reads/*
 funannotate/protein_evidence/WGA_10a_S2/
 funannotate/transcript_evidence/WGA_10a_S2/
+spades_run.yaml
